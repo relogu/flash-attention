@@ -524,6 +524,9 @@ if not SKIP_CUDA_BUILD:
         "-DCUTLASS_ENABLE_GDC_FOR_SM90",  # For PDL
         "-DCUTLASS_DEBUG_TRACE_LEVEL=0",  # Can toggle for debugging
         "-DNDEBUG",  # Important, otherwise performance is severely impacted
+        "-Xfatbin",  # compress all binary sections
+        "-compress-all",
+        "-compress-mode=size",  # compress with CUDA fatbin more aggressively
     ]
     if get_platform() == "win_amd64":
         nvcc_flags.extend(
@@ -539,13 +542,14 @@ if not SKIP_CUDA_BUILD:
 
     ext_modules.append(
         CUDAExtension(
-            name="flash_attn_3_cuda",
+            name=f"{PACKAGE_NAME}._C",
             sources=sources,
             extra_compile_args={
-                "cxx": ["-O3", "-std=c++17"] + feature_args,
+                "cxx": ["-O3", "-std=c++17", "-DPy_LIMITED_API=0x03090000"] + feature_args,
                 "nvcc": nvcc_threads_args() + nvcc_flags + cc_flag + feature_args,
             },
             include_dirs=include_dirs,
+            py_limited_api=True,
         )
     )
 
@@ -654,4 +658,5 @@ setup(
         "packaging",
         "ninja",
     ],
+    options={"bdist_wheel": {"py_limited_api": "cp39"}},
 )
